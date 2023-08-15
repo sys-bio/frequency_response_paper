@@ -1,0 +1,15 @@
+coverage
+control
+docstring-expander
+jupyterlab
+lmfit
+matplotlib
+nose
+pandas
+pip>20
+pylint
+python-libsbml
+SBMLDiagrams
+seaborn
+sympy
+tellurium
