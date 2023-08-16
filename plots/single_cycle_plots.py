@@ -23,6 +23,58 @@ r = te.loada("""
      Km2 = 0.5
 """)
 
+# r.steadyState()
+# print(r.A, r.AP)
+#
+# x = []
+# y = []
+# c1 = []
+# c2 = []
+# z = []
+#
+# for i in range(100):
+#     r.steadyState()
+#     x.append(r.k1)
+#     y.append(r.AP)
+#     c1.append(r.getuCC('AP', 'k1') / 5)
+#     c2.append(r.getCC('AP', 'k1'))
+#     z.append(r.getReducedJacobian()[0][0])
+#     r.k1 = r.k1 + 0.01
+#
+# plt.plot(x, y, label="AP")
+# plt.plot(x, z, label="rJac")
+# plt.plot(x, c1, label="uCC")
+# plt.plot(x, c2, label="CC=uCC*k1/AP")
+# plt.legend()
+# plt.savefig("single_cycle_plot")
+# plt.show()
+#
+# quit()
+
+# =========================================================
+
+r.steadyState()
+
+k1s = []
+BWs = []
+
+for i in np.arange(0.14, 1.4, .01):
+    r.steadyState()
+    k1s.append(r.k1)
+    r.k1 = i
+    BWs.append(r.getEE('J2', 'AP') + r.getEE('J1', 'A'))
+#
+plt.plot(k1s, BWs)
+plt.xlabel('k1')
+plt.ylabel('Bandwidth (E^J2_AP + E^J1_A)')
+plt.title("Bandwidth vs k1")
+plt.savefig("Bandwidth_vs_k1")
+plt.show()
+
+quit()
+
+# =========================================================
+
 # k1s = []
 # freqs = []
 # amps = []
@@ -65,24 +117,6 @@ r = te.loada("""
 
 # quit()
 
-r.steadyState()
-print (r.A, r.AP)
 
 
-x = []; y = []; c1 =[]; c2 = []; z = []
-for i in range (100):
-    r.steadyState()
-    x.append (r.k1)
-    y.append (r.AP)
-    c1.append (r.getuCC ('AP', 'k1')/5)
-    c2.append (r.getCC ('AP', 'k1'))
-    z.append (r.getReducedJacobian()[0][0])
-    r.k1 = r.k1 + 0.01
 
-plt.plot (x, y, label="AP")
-plt.plot (x, z, label="rJac")
-plt.plot (x, c1, label="uCC")
-plt.plot (x, c2, label="CC=uCC*k1/AP")
-plt.legend()
-plt.savefig("single_cycle_plot")
-plt.show()
