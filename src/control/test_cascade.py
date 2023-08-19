@@ -3,8 +3,8 @@ import numpy as np
 import tellurium as te
 import unittest
 
-IGNORE_TEST = True
-IS_PLOT = True
+IGNORE_TEST = False
+IS_PLOT = False
 
 class TestCalculateSteadyState(unittest.TestCase):
 
@@ -19,8 +19,8 @@ class TestCalculateSteadyState(unittest.TestCase):
         self.cascade = Cascade(self.rvec, self.total)
 
     def testConstructor(self):
-        #if IGNORE_TEST:
-        #    return
+        if IGNORE_TEST:
+            return
         total = 100
         #
         rvec = [1, 2, 3]
@@ -35,7 +35,7 @@ class TestCalculateSteadyState(unittest.TestCase):
         if IGNORE_TEST:
             return
         prediction_dct = cascade.calculateSteadyState()
-        simulated_dct = cascade.calculateSimulatedSteadyState()
+        simulated_dct = cascade.simulateSteadyState()
         for name, value in simulated_dct.items():
             error = np.abs((prediction_dct[name] - value)/value)
             if error < tol:
@@ -88,7 +88,6 @@ class TestCalculateSteadyState(unittest.TestCase):
         total = 100
         rv = np.repeat(2, num_species)
         cc = self.cascade.simulateControlCoefficient()
-        import pdb; pdb.set_trace()
 
 if __name__ == '__main__':
     unittest.main()
