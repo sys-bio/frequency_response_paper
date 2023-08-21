@@ -2,10 +2,12 @@
 
 import numpy as np
 import os
+import pandas as pd
 import tellurium as te
 import matplotlib.pyplot as plt
 
 PLOT_DIR = os.path.join(os.path.dirname(__file__), "plots")
+K2_NAME = "k2"
 
 
 class Cascade(object):
@@ -23,6 +25,34 @@ class Cascade(object):
         self.antimony, self.species_names = self.makeAntimony()
         self.roadrunner = te.loada(self.antimony)
 
+    def _calculateProductOfRatios(self, k2_val=None):
+        """
+        Calculate the product of ratios starting at various positions in the cascade
+        and ending at the final species.
+
+        Args:
+            k2_val: float (k2 value to use)
+        Returns:
+            array-float
+        """
+        K2_RATIO_POS = 0  # Ratio that uses k2
+        if k2_val is None:
+            k2_val = self.ratio_vec[K2_RATIO_POS]
+        prods = []
+        indices = list(range(self.num_species - 1))
+        indices.reverse()
+        #
+        for pos in indices:
+            if pos == K2_RATIO_POS:
+                ratio = k2_val
+            else:
+                ratio = self.ratio_vec[pos]
+            prods.insert(0, ratio)
+            if pos < self.num_ratio_vec - 1:
+                prods[0] *= prods[1]
+        #
+        return prods
+
     def calculateSteadyState(self):
         """ 
         Calculates the steady state value of each species.
@@ -35,15 +65,7 @@ class Cascade(object):
                 key: species name
                 value: steady state concentration
         """
-        prods = []
-        indices = list(range(self.num_species - 1))
-        indices.reverse()
-        # Calculate the products for each position in the cascade
-        for pos in indices:
-            prods.insert(0, self.ratio_vec[pos])
-            if pos < self.num_ratio_vec - 1:
-                prods[0] *= prods[1]
-        # 
+        prods = self._calculateProductOfRatios()
         denominator = 1 + np.sum(prods)
         result_arr = self.total*np.append(prods, [1])/denominator
         result_dct = {self.species_names[n]: result_arr[n] for n in range(self.num_species)}
@@ -104,29 +126,16 @@ class Cascade(object):
         #
         return antimony, species_names
     
-    def calculateSteadyState(self):
-        """
-        Returns the steady state concentrations of the species.
-
-        Returns
-            dict (keys are species names, values are concentrations)
-        """
-        self.roadrunner.reset()
-        self.roadrunner.steadyState()
-        result_dct = {}
-        for name in self.species_names:
-            #result_dct[name] = data[column][-1]
-            result_dct[name] = self.roadrunner[name]
-        return result_dct
-    
-    def simulateSteadyState(self):
+    def simulateSteadyState(self, parameter_dct=None):
         """
         Returns the steady state concentrations of the species from simulation.
 
         Returns
             dict (keys are species names, values are concentrations)
         """
-        self.roadrunner.reset()
+        self.reset()
+        if parameter_dct is not None:
+            self.set(parameter_dct)
         self.roadrunner.steadyState()
         result_dct = {}
         for name in self.species_names:
@@ -153,22 +162,141 @@ class Cascade(object):
     @staticmethod
     def getParameterNumber(name):
         return int(name[1:])
+    
+    def set(self, parameter_dct):
+        """
+        Sets the parameters of the cascade.
 
-    def simulateControlCoefficient(self):
+        Args:
+            parameter_dct: dict
+                key: parameter name or number
+                value: parameter value
+        """
+        for name, value in parameter_dct.items():
+            if isinstance(name, int):
+                name = self.makeParameterName(name)
+            self.roadrunner[name] = value
+
+    def reset(self):
+        """
+        Resets the cascade to its initial state.
+        """
+        self.roadrunner.reset()
+
+    def simulateControlCoefficient(self, parameter_dct=None):
         """
         Gets control coefficient for S_N relative to k_1 from tellurium.
 
         Args:
-            ratio_vec: array-float
-            total: float
-            ratio_idx: int (index of the ratio being changed)
-            delta: float (amount by which the ratio is changed)
+            parameter_dct: values to set parameters to
         """
-        self.roadrunner.reset()
+        if parameter_dct is None:
+            parameter_dct = {}
+        self.reset()
+        self.set(parameter_dct)
         self.roadrunner.steadyState()
         name = self.species_names[-1]
-        return self.roadrunner.getCC(name, self.makeParameterName(1))
+        return self.roadrunner.getCC(name, K2_NAME)
     
+    def plotControlCoefficient(self, k2_vals, parameter_dct=None, filename="control_coefficient.pdf", **kwargs):
+        """
+        Plots the simulated control coefficient for S_N relative to k_2 and optionally values of a second
+        kinetic constant.
+
+        Args:
+            k2_vas: values of k2
+            kinetic_dct (dict):
+                key: kinetic constant name
+                value: kinetic constant values
+            filename (str, optional): _description_. Defaults to "control_coefficient.pdf".
+        Returns:
+            pd.Series
+                index: k2 values
+                value: control coefficient
+        """
+        if parameter_dct is None:
+            parameter_dct = {}
+        def simulateCC(k2_vals):
+            result = []
+            dct = dict(parameter_dct)
+            for val in k2_vals:
+                dct[2] = val
+                result.append(self.simulateControlCoefficient(parameter_dct=dct))
+            return result
+        # Simulate
+        cc_vals = simulateCC(k2_vals)
+        # Plot
+        _, ax = plt.subplots(1)
+        ax.plot(k2_vals, cc_vals)
+        ax.set_xlabel(K2_NAME)
+        ax.set_ylabel("control coefficient")
+        self.writePlot(filename, **kwargs)
+
+    def calculateControlCoefficient(self, k2_vals, parameter_dct=None):
+        """
+        Calculates the S_N control coefficient w.r.t. k2.
+
+        Args:
+            k2_vas: values of k2
+            kinetic_dct (dict):
+                key: kinetic constant name
+                value: kinetic constant values
+        Returns:
+            pd.Series
+                index: k2 values
+                value: control coefficient
+        """
+        def simulateCC(k2_vals):
+            result = []
+            dct = dict(parameter_dct)
+            for val in k2_vals:
+                dct[2] = val
+                result.append(self.simulateControlCoefficient(dct))
+            return result
+        #
+        if parameter_dct is None:
+            parameter_dct = {}
+            parameter_dct[self.makeParameterName(2)] = np.linspace(0.1, 10, 100)
+        _, ax = plt.subplots(1)
+        if len(parameter_dct.keys()) == 1:
+            k2_vals = parameter_dct[K2_NAME]
+            cc_vals = simulateCC(k2_vals)
+            ax.plot(k2_vals, cc_vals)
+        else:
+            pass
+        ax.set_xlabel(K2_NAME)
+        ax.set_ylabel("control coefficient")
+        self.writePlot(filename, **kwargs)
+
+    def plotConcentrations(self, k2_vals, filename="concentration.pdf", **kwargs):
+        """
+        Plots the control coefficient for S_N relative to k_1 and optionally values of a second
+        kinetic constant.
+
+        Args:
+            k2_vals: values of k2 to change
+            filename (str, optional): _description_. Defaults to "control_coefficient.pdf".
+        """
+        def calculateSN():
+            result_dct = {n: [] for n in self.species_names}
+            for val in k2_vals:
+                parameter_dct = {2: val}
+                sim_dct = self.simulateSteadyState(parameter_dct=parameter_dct)
+                for name, value in sim_dct.items():
+                    result_dct[name].append(value)
+            df = pd.DataFrame(result_dct)
+            df.index = k2_vals
+            return df
+
+        #
+        _, ax = plt.subplots(1)
+        df = calculateSN()
+        df.plot.bar(ax=ax, stacked=True)
+        ax.set_xlabel(K2_NAME)
+        ax.set_ylabel("concentration")
+        ax.set_title("k4=%2.2f" % self.roadrunner.k4)
+        self.writePlot(filename, **kwargs)
+
     def writePlot(self, filename, **kwargs):
         """
         Writes the current plot to a file.

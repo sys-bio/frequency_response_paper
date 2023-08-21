@@ -1,10 +1,11 @@
 from control.cascade import Cascade
+import control.cascade as cas
 import numpy as np
 import tellurium as te
 import unittest
 
 IGNORE_TEST = False
-IS_PLOT = False
+IS_PLOT = True
 
 class TestCalculateSteadyState(unittest.TestCase):
 
@@ -32,8 +33,6 @@ class TestCalculateSteadyState(unittest.TestCase):
 
 
     def checkCalculateSteadyState(self, cascade, tol=1e-2):
-        if IGNORE_TEST:
-            return
         prediction_dct = cascade.calculateSteadyState()
         simulated_dct = cascade.simulateSteadyState()
         for name, value in simulated_dct.items():
@@ -47,11 +46,15 @@ class TestCalculateSteadyState(unittest.TestCase):
     def testCalculateSteadyState(self):
         if IGNORE_TEST:
             return
+        if IGNORE_TEST:
+            self.init()
         self.checkCalculateSteadyState(self.cascade)
 
     def testCalculateSteadyStateBigger(self):
         if IGNORE_TEST:
             return
+        if IGNORE_TEST:
+            self.init()
         for num in [5, 10, 15]:
             ratio_vec = np.random.rand(num) + 0.5
             total = 100
@@ -88,6 +91,40 @@ class TestCalculateSteadyState(unittest.TestCase):
         total = 100
         rv = np.repeat(2, num_species)
         cc = self.cascade.simulateControlCoefficient()
+
+    def testSet(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        self.cascade.set({"k1": 100})
+        self.assertTrue(self.cascade.roadrunner.k1 == 100)
+        #
+        self.cascade.set({1: 100})
+        self.assertTrue(self.cascade.roadrunner.k1 == 100)
+
+    def testPlotControlCoefficient(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        rvec = [1, 0.01]
+        total = 100
+        cascade = Cascade(rvec, total)
+        k2_vals = [0.1, 1, 1.5, 2.0, 10, 20, 50, 100, 1000, 1e5]
+        cascade.plotControlCoefficient(k2_vals)
+
+    def testPlotConcentrations(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        rvec = [1, 0.01]
+        cascade = Cascade(rvec, self.total)
+        k2_vals = [0.1, 1, 1.5, 2.0, 10, 20, 50, 100, 1000, 1e5]
+        cascade.plotConcentrations(k2_vals)
+
+
 
 if __name__ == '__main__':
     unittest.main()
