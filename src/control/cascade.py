@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 PLOT_DIR = os.path.join(os.path.dirname(__file__), "plots")
 K2_NAME = "k2"
+R1_POS = 0  # Position in ratio_vec for ratio 1
 
 
 class Cascade(object):
@@ -18,14 +19,14 @@ class Cascade(object):
             ratio_vec: array-float (dimension N-1. ratio_vec[n] = r_n)
             total: float (T)
         """
-        self.ratio_vec = ratio_vec
+        self.ratio_arr = np.array([float(r) for r in ratio_vec])
         self.total = total
-        self.num_ratio_vec = len(self.ratio_vec)
+        self.num_ratio_vec = len(self.ratio_arr)
         self.num_species = self.num_ratio_vec + 1
         self.antimony, self.species_names = self.makeAntimony()
         self.roadrunner = te.loada(self.antimony)
 
-    def _calculateProductOfRatios(self, k2_val=None):
+    def _calculateProductOfRatios(self, r1_val=None):
         """
         Calculate the product of ratios starting at various positions in the cascade
         and ending at the final species.
@@ -35,37 +36,35 @@ class Cascade(object):
         Returns:
             array-float
         """
-        K2_RATIO_POS = 0  # Ratio that uses k2
-        if k2_val is None:
-            k2_val = self.ratio_vec[K2_RATIO_POS]
+        if r1_val is None:
+            r1_val = self.ratio_arr[R1_POS]
         prods = []
         indices = list(range(self.num_species - 1))
         indices.reverse()
         #
         for pos in indices:
-            if pos == K2_RATIO_POS:
-                ratio = k2_val
+            if pos == R1_POS:
+                ratio = r1_val
             else:
-                ratio = self.ratio_vec[pos]
+                ratio = self.ratio_arr[pos]
             prods.insert(0, ratio)
             if pos < self.num_ratio_vec - 1:
                 prods[0] *= prods[1]
         #
         return prods
 
-    def calculateSteadyState(self):
+    def calculateSteadyState(self, r1_val=None):
         """ 
         Calculates the steady state value of each species.
 
         Args:
-            ratio_vec: array-float (dimension N-1. ratio_vec[n] = r_n)
-            total: float (T)
+            r1_val: float (value of r1 to use)
         Returns
             dict
                 key: species name
                 value: steady state concentration
         """
-        prods = self._calculateProductOfRatios()
+        prods = self._calculateProductOfRatios(r1_val=r1_val)
         denominator = 1 + np.sum(prods)
         result_arr = self.total*np.append(prods, [1])/denominator
         result_dct = {self.species_names[n]: result_arr[n] for n in range(self.num_species)}
@@ -92,7 +91,7 @@ class Cascade(object):
                 return 1
             else:
                 pos = idx % 2
-                return self.ratio_vec[pos]
+                return self.ratio_arr[pos]
         #
         for idx in range(1, self.num_species):
             spc1 = "S" + str(idx)
@@ -113,7 +112,7 @@ class Cascade(object):
                 value = 1
             else:
                 pos = idx // 2 - 1
-                value = self.ratio_vec[pos]
+                value = self.ratio_arr[pos]
             antimony += constant + " = " + str(value) + ";\n"
         # Initialize species
         is_first = True
@@ -183,22 +182,35 @@ class Cascade(object):
         """
         self.roadrunner.reset()
 
-    def simulateControlCoefficient(self, parameter_dct=None):
+    def simulateControlCoefficient(self, k2_vals=None, parameter_dct=None):
         """
         Gets control coefficient for S_N relative to k_1 from tellurium.
 
         Args:
+            k2_vals: values of k2 to change
             parameter_dct: values to set parameters to
+        Returns:
+            pd.Series
+                index: k2 values
+                values: control coefficient
         """
+        if k2_vals is None:
+            k2_vals = [self.roadrunner[K2_NAME]]
         if parameter_dct is None:
             parameter_dct = {}
-        self.reset()
-        self.set(parameter_dct)
-        self.roadrunner.steadyState()
-        name = self.species_names[-1]
-        return self.roadrunner.getCC(name, K2_NAME)
+        last_species_name = self.species_names[-1]
+        results = []
+        dct = dict(parameter_dct)
+        for val in k2_vals:
+            self.reset()
+            dct[K2_NAME] = float(val)
+            self.set(dct)
+            self.roadrunner.steadyState()
+            results.append(self.roadrunner.getCC(last_species_name, K2_NAME))
+        ser = pd.Series(results, index=k2_vals)
+        return ser 
     
-    def plotControlCoefficient(self, k2_vals, parameter_dct=None, filename="control_coefficient.pdf", **kwargs):
+    def plotSimulatedControlCoefficient(self, k2_vals, parameter_dct=None, filename="control_coefficient.pdf", **kwargs):
         """
         Plots the simulated control coefficient for S_N relative to k_2 and optionally values of a second
         kinetic constant.
@@ -214,17 +226,7 @@ class Cascade(object):
                 index: k2 values
                 value: control coefficient
         """
-        if parameter_dct is None:
-            parameter_dct = {}
-        def simulateCC(k2_vals):
-            result = []
-            dct = dict(parameter_dct)
-            for val in k2_vals:
-                dct[2] = val
-                result.append(self.simulateControlCoefficient(parameter_dct=dct))
-            return result
-        # Simulate
-        cc_vals = simulateCC(k2_vals)
+        cc_vals = self.simulateControlCoefficient(k2_vals, parameter_dct=parameter_dct).values
         # Plot
         _, ax = plt.subplots(1)
         ax.plot(k2_vals, cc_vals)
@@ -232,12 +234,12 @@ class Cascade(object):
         ax.set_ylabel("control coefficient")
         self.writePlot(filename, **kwargs)
 
-    def calculateControlCoefficient(self, k2_vals, parameter_dct=None):
+    def calculateControlCoefficient(self, r1_vals=None, parameter_dct=None):
         """
         Calculates the S_N control coefficient w.r.t. k2.
 
         Args:
-            k2_vas: values of k2
+            r1_vals: values of r1 to change
             kinetic_dct (dict):
                 key: kinetic constant name
                 value: kinetic constant values
@@ -246,27 +248,17 @@ class Cascade(object):
                 index: k2 values
                 value: control coefficient
         """
-        def simulateCC(k2_vals):
-            result = []
-            dct = dict(parameter_dct)
-            for val in k2_vals:
-                dct[2] = val
-                result.append(self.simulateControlCoefficient(dct))
-            return result
-        #
-        if parameter_dct is None:
-            parameter_dct = {}
-            parameter_dct[self.makeParameterName(2)] = np.linspace(0.1, 10, 100)
-        _, ax = plt.subplots(1)
-        if len(parameter_dct.keys()) == 1:
-            k2_vals = parameter_dct[K2_NAME]
-            cc_vals = simulateCC(k2_vals)
-            ax.plot(k2_vals, cc_vals)
-        else:
-            pass
-        ax.set_xlabel(K2_NAME)
-        ax.set_ylabel("control coefficient")
-        self.writePlot(filename, **kwargs)
+        if r1_vals is None:
+            r1_vals = [self.ratio_arr[0]]
+        cc_vals = []
+        for r1_val in r1_vals:
+            prods = self._calculateProductOfRatios(r1_val=r1_val)
+            dSNdrm = -self.total*prods[0]/(r1_val*(1 + np.sum(prods))**2)
+            ss_dct = self.calculateSteadyState(r1_val=r1_val)
+            last_name = self.species_names[-1]
+            cc_vals.append(dSNdrm*r1_val/ss_dct[last_name])
+        ser = pd.Series(cc_vals, index=r1_vals)
+        return ser
 
     def plotConcentrations(self, k2_vals, filename="concentration.pdf", **kwargs):
         """
