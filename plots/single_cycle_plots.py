@@ -23,6 +23,23 @@ r = te.loada("""
      Km2 = 0.5
 """)
 
+# def AP(k):
+#     return ((-k * 0.5 - 0.7 * 0.5 + k * 10 - 0.7 * 10
+#             + np.sqrt(4 * k * (k - 0.7) * 0.5 * 10 + (k * 0.5 + 0.7 * 0.5 - k * 10 + 0.7 * 10) ** 2))
+#             / (2*(k - 0.7)))
+
+# def dAP(k):
+#     return (-0.1225 -0.175 * k + 0.35 * np.sqrt(54.0225-))
+
+# func_values = []
+# k = 0.14
+# for i in range(100):
+#     func_values.append(AP(k))
+#     print(AP(k))
+#     k += 0.01
+
+# print(func_values)
+
 # r.steadyState()
 # print(r.A, r.AP)
 #
@@ -42,80 +59,98 @@ r = te.loada("""
 #     r.k1 = r.k1 + 0.01
 #
 # plt.plot(x, y, label="AP")
-# plt.plot(x, z, label="rJac")
-# plt.plot(x, c1, label="uCC")
-# plt.plot(x, c2, label="CC=uCC*k1/AP")
-# plt.legend()
-# plt.savefig("single_cycle_plot")
+# # plt.plot(x, func_values, label="analytical AP")
+# # plt.plot(x, z, label="rJac")
+# plt.plot(x, c1, label="CC/5")
+# plt.plot(x, c2, label="scaled CC")
+# plt.xticks(fontsize=15)
+# plt.yticks(fontsize=15)
+# plt.xlabel("k1", fontsize=15)
+# plt.legend(fontsize=15)
+# plt.tight_layout()
+# plt.savefig("single_cycle_plot.pdf")
 # plt.show()
 #
 # quit()
 
 # =========================================================
 
-r.steadyState()
+# r.steadyState()
+#
+# k1s = []
+# BWs = []
+#
+# for i in np.arange(0.14, 1.4, .01):
+#     r.steadyState()
+#     k1s.append(r.k1)
+#     r.k1 = i
+#     BWs.append(r.getEE('J2', 'AP') + r.getEE('J1', 'A'))
+# #
+# plt.plot(k1s, BWs)
+# plt.xlabel('k1', fontsize=15)
+# plt.ylabel('Bandwidth ($\epsilon^{J2}_{AP} + \epsilon^{J1}_{A}$)', fontsize=15)
+# plt.title("Bandwidth vs k1", fontsize=15)
+# plt.xticks(fontsize=15)
+# plt.yticks(fontsize=15)
+# plt.tight_layout()
+# plt.savefig("Bandwidth_vs_k1.pdf")
+# plt.show()
+#
+# quit()
+
+# =========================================================
 
 k1s = []
-BWs = []
-
+freqs = []
+amps = []
+phases = []
 for i in np.arange(0.14, 1.4, .01):
-    r.steadyState()
-    k1s.append(r.k1)
+    amps.append([])
+    phases.append([])
+    k1s.append(i)
     r.k1 = i
-    BWs.append(r.getEE('J2', 'AP') + r.getEE('J1', 'A'))
-#
-plt.plot(k1s, BWs)
-plt.xlabel('k1')
-plt.ylabel('Bandwidth (E^J2_AP + E^J1_A)')
-plt.title("Bandwidth vs k1")
-plt.savefig("Bandwidth_vs_k1")
+    fr = FreqencyResponse(r)
+    results = fr.getSpeciesFrequencyResponse(0.001, 3, 100, 'k1', 'AP')
+    for each in results:
+        amps[-1].append(each[1])
+        phases[-1].append(each[2])
+    if i == 0.14:
+        for each in results:
+            freqs.append(np.log10(each[0]))
+
+xx, yy = np.meshgrid(freqs, k1s)
+
+amps = np.array(amps)
+phases = np.array(phases)
+
+fig = plt.figure(figsize=(6, 6))
+ax = fig.add_subplot(111, projection='3d')
+ax.set_xlabel("Freq (log10)", fontsize=15, labelpad=10)
+ax.set_ylabel("k1", fontsize=15, labelpad=10)
+
+# uncomment for freq
+# ax.set_zlabel("Amp (log10)", fontsize=15, labelpad=5)
+# ax.plot_surface(xx, yy, amps)
+# ax.view_init(elev=30., azim=-45)
+# plt.title("Amplitude vs Frequency over k1", fontsize=15)
+# plt.xticks(fontsize=13)
+# plt.yticks(fontsize=13)
+# ax.tick_params('z', labelsize=13)
+# plt.savefig("freq_amp_over_k1.pdf")
+# plt.show()
+
+# uncomment for phase
+ax.set_zlabel("Phase (degrees)", fontsize=15, labelpad=5)
+ax.plot_surface(xx, yy, phases)
+ax.view_init(elev=30., azim=-45)
+plt.title("Phase vs Frequency over k1", fontsize=15)
+plt.xticks(fontsize=13)
+plt.yticks(fontsize=13)
+ax.tick_params('z', labelsize=13)
+plt.savefig("freq_phase_over_k1.pdf")
 plt.show()
 
 quit()
-
-# =========================================================
-
-# k1s = []
-# freqs = []
-# amps = []
-# phases = []
-# for i in np.arange(0.14, 1.4, .01):
-#     amps.append([])
-#     phases.append([])
-#     k1s.append(i)
-#     r.k1 = i
-#     fr = FreqencyResponse(r)
-#     results = fr.getSpeciesFrequencyResponse(0.01, 3, 100, 'k1', 'AP')
-#     for each in results:
-#         amps[-1].append(each[1])
-#         phases[-1].append(each[2])
-#     if i == 0.14:
-#         for each in results:
-#             freqs.append(np.log10(each[0]))
-#
-# xx, yy = np.meshgrid(freqs, k1s)
-#
-# amps = np.array(amps)
-# phases = np.array(phases)
-#
-# fig = plt.figure(figsize=(6,6))
-# ax = fig.add_subplot(111, projection='3d')
-# ax.set_xlabel("Freq")
-# ax.set_ylabel("k1")
-
-# uncomment for freq
-# ax.set_zlabel("Amp")
-# ax.plot_surface(xx, yy, amps)
-# plt.savefig("freq_amp_over_k1")
-# # plt.show()
-
-# uncomment for phase
-# ax.set_zlabel("Phase")
-# ax.plot_surface(xx, yy, phases)
-# # plt.savefig("freq_phase_over_k1")
-# plt.show()
-
-# quit()
 
 
 
