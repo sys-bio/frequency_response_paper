@@ -1,6 +1,7 @@
 from control.cascade import Cascade
+
+import pandas as pd
 import numpy as np
-import tellurium as te
 import unittest
 
 IGNORE_TEST = False
@@ -32,8 +33,6 @@ class TestCalculateSteadyState(unittest.TestCase):
 
 
     def checkCalculateSteadyState(self, cascade, tol=1e-2):
-        if IGNORE_TEST:
-            return
         prediction_dct = cascade.calculateSteadyState()
         simulated_dct = cascade.simulateSteadyState()
         for name, value in simulated_dct.items():
@@ -47,11 +46,15 @@ class TestCalculateSteadyState(unittest.TestCase):
     def testCalculateSteadyState(self):
         if IGNORE_TEST:
             return
+        if IGNORE_TEST:
+            self.init()
         self.checkCalculateSteadyState(self.cascade)
 
     def testCalculateSteadyStateBigger(self):
         if IGNORE_TEST:
             return
+        if IGNORE_TEST:
+            self.init()
         for num in [5, 10, 15]:
             ratio_vec = np.random.rand(num) + 0.5
             total = 100
@@ -83,11 +86,56 @@ class TestCalculateSteadyState(unittest.TestCase):
     def testSimulateLastControlCoefficient(self):
         if IGNORE_TEST:
             return
-        num_species = 10
-        num_step = 5
+        cc_ser = self.cascade.simulateControlCoefficient()
+        self.assertTrue(isinstance(cc_ser, pd.Series))
+
+    def testSet(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        self.cascade.set({"k1": 100})
+        self.assertTrue(self.cascade.roadrunner.k1 == 100)
+        #
+        self.cascade.set({1: 100})
+        self.assertTrue(self.cascade.roadrunner.k1 == 100)
+
+    def testPlotControlCoefficient(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        rvec = [1, 0.01]
         total = 100
-        rv = np.repeat(2, num_species)
-        cc = self.cascade.simulateControlCoefficient()
+        cascade = Cascade(rvec, total)
+        k2_vals = [0.1, 1, 1.5, 2.0, 10, 20, 50, 100, 1000, 1e5]
+        cascade.plotSimulatedControlCoefficient(k2_vals)
+
+    def testPlotConcentrations(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        rvec = [1, 0.01]
+        cascade = Cascade(rvec, self.total)
+        k2_vals = [0.1, 1, 1.5, 2.0, 10, 20, 50, 100, 1000, 1e5]
+        cascade.plotConcentrations(k2_vals)
+
+    def testCalculateControlCoefficient(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        rvec = [1, 1000]
+        cascade = Cascade(rvec, self.total)
+        r1_vals = np.array([10, 100, 1000, 10000, 100000])
+        r1_vals = np.array([100000])
+        calc_ser = cascade.calculateControlCoefficient(r1_vals=r1_vals)
+        sim_ser = cascade.simulateControlCoefficient(k2_vals=r1_vals)
+        rmse = np.sum((calc_ser - sim_ser).values**2)
+        self.assertTrue(np.isclose(rmse, 0))
+
+
 
 if __name__ == '__main__':
     unittest.main()
