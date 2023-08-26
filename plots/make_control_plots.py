@@ -16,8 +16,7 @@ def plotSingleControlCoefficientComparisons(species_idx, ax=None):
     r_vals = [0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 50, 100, 200, 300, 400, 500]
     cascade.plotSimulatedControlCoefficient(species_idx=species_idx, r_vals=r_vals, ax=ax)
     ax.set_xscale('log')
-    subscript = 2*species_idx-1
-    ax.set_xlabel(r'$log k_{%d}$' % subscript)
+    ax.set_xlabel(r'$log r_{%d}$' % species_idx)
     writePlot("control_coefficient_comparisons.pdf")
 
 def plotMultipleControlCoefficientComparisons():
