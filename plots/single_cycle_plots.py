@@ -25,61 +25,47 @@ r = te.loada("""
      
 """)
 
-# def AP(k):
-#     return ((-k * 0.5 - 0.7 * 0.5 + k * 10 - 0.7 * 10
-#             + np.sqrt(4 * k * (k - 0.7) * 0.5 * 10 + (k * 0.5 + 0.7 * 0.5 - k * 10 + 0.7 * 10) ** 2))
-#             / (2*(k - 0.7)))
+r.conservedMoietyAnalysis = True
+r.steadyState()
 
-# def dAP(k):
-#     return (-0.1225 -0.175 * k + 0.35 * np.sqrt(54.0225-))
+x = []
+y = []
+c1 = []
+c2 = []
+z = []
+z2 = []
 
-# func_values = []
-# k = 0.14
-# for i in range(100):
-#     func_values.append(AP(k))
-#     print(AP(k))
-#     k += 0.01
+for i in range(800):
+    r.steadyState()
+    x.append(r.S)
+    y.append(r.AP)
+    c1.append(r.getuCC('AP', 'S'))
+    c2.append(r.getCC('AP', 'S'))
+    z.append(r.getReducedJacobian()[0][0])
+    # print(z[-1])
+    z2.append(r.getNrMatrix())
+    # print(z2)
+    r.S = r.S + 0.01
 
-# print(func_values)
-# r.conservedMoietyAnalysis = True
-# r.steadyState()
-#
-# x = []
-# y = []
-# c1 = []
-# c2 = []
-# z = []
-#
-# for i in range(800):
-#     r.steadyState()
-#     x.append(r.S)
-#     y.append(r.AP)
-#     c1.append(r.getuCC('AP', 'S'))
-#     c2.append(r.getCC('AP', 'S'))
-#     # z.append(r.getReducedJacobian()[0][0])
-#     r.S = r.S + 0.01
 # print(r.k1)
-# plt.plot(x, y, label=r"$AP_{ss}$")
-# # plt.plot(x, func_values, label="analytical AP")
-# # plt.plot(x, z, label="rJac")
-# plt.plot(x, c1, label=r"$\frac{dAP_{ss}}{dS}$")
-# plt.plot(x, c2, label=r"$\frac{dAP_{ss}}{dS}\frac{S}{AP_{ss}}$")
-# plt.xticks(fontsize=15)
-# plt.yticks(fontsize=15)
-# plt.xlabel("Input signal S", fontsize=15)
-# plt.legend(fontsize=15)
-# plt.tight_layout()
-# plt.savefig("single_cycle_plot.pdf")
-# # plt.savefig("single_cycle_plot")
-# plt.show()
-#
-# quit()
+plt.plot(x, y, label=r"$AP_{ss}$")
+# plt.plot(x, func_values, label="analytical AP")
+# plt.plot(x, z, label="rJac")
+plt.plot(x, c1, label=r"$\frac{dAP_{ss}}{dS}$")
+plt.plot(x, c2, label=r"$\frac{dAP_{ss}}{dS}\frac{S}{AP_{ss}}$")
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.xlabel("Signal S", fontsize=15)
+plt.legend(fontsize=15)
+plt.tight_layout()
+plt.savefig("single_cycle_plot.pdf")
+plt.savefig("single_cycle_plot")
+plt.show()
 
+quit()
 
 # =========================================================
 
-# r.steadyState()
-#
 # r.conservedMoietyAnalysis = True
 # r.steadyState()
 #
@@ -96,7 +82,7 @@ r = te.loada("""
 #     r.S = r.S + 0.01
 #
 # fig, ax1 = plt.subplots()
-# ax1.set_xlabel('Input signal S', fontsize=15)
+# ax1.set_xlabel('Signal S', fontsize=15)
 # ax1.set_ylabel('Jacobian', fontsize=15)
 # plt.yticks(fontsize=15)
 # plt.xticks(fontsize=15)
@@ -114,7 +100,7 @@ r = te.loada("""
 #
 # fig.tight_layout()
 # plt.savefig('Jacobian.pdf')
-# plt.savefig('Jacobian')
+# # plt.savefig('Jacobian')
 # plt.show()
 #
 #
@@ -150,7 +136,7 @@ r = te.loada("""
 # fig, ax1 = plt.subplots()
 # BWPlot = ax1.plot(x, BWs, linewidth=2, label="bandwidth")
 #
-# ax1.set_xlabel('Input signal S', fontsize=15)
+# ax1.set_xlabel('Signal S', fontsize=15)
 # ax1.set_ylabel('Bandwidth ($\epsilon^{v2}_{AP} + \epsilon^{v1}_{A}$)', fontsize=15)
 #
 # # plt.xlabel('k1', fontsize=15)
@@ -172,7 +158,7 @@ r = te.loada("""
 #
 # fig.tight_layout()
 # plt.savefig("Bandwidth_vs_k1.pdf")
-# plt.savefig("Bandwidth_vs_k1")
+# # plt.savefig("Bandwidth_vs_k1")
 # plt.show()
 #
 # quit()
@@ -208,29 +194,29 @@ r = te.loada("""
 # fig = plt.figure(figsize=(6, 6))
 # ax = fig.add_subplot(111, projection='3d')
 # ax.set_xlabel("Freq (log10)", fontsize=15, labelpad=10)
-# ax.set_ylabel("Input signal S", fontsize=15, labelpad=10)
+# ax.set_ylabel("Signal S", fontsize=15, labelpad=10)
 #
 # # uncomment for freq
-# # ax.set_zlabel("Amp (log10)", fontsize=15, labelpad=5)
-# # ax.plot_surface(xx, yy, amps)
-# # ax.view_init(elev=30., azim=-45)
-# # # plt.title("Amplitude vs Frequency over k1", fontsize=15)
-# # plt.xticks(fontsize=13)
-# # plt.yticks(fontsize=13)
-# # ax.tick_params('z', labelsize=13)
-# # plt.savefig("freq_amp_over_k1.pdf")
-# # plt.show()
-#
-# # uncomment for phase
-# ax.set_zlabel("Phase (degrees)", fontsize=15, labelpad=5)
-# ax.plot_surface(xx, yy, phases)
+# ax.set_zlabel("Amp (log10)", fontsize=15, labelpad=5)
+# ax.plot_surface(xx, yy, amps)
 # ax.view_init(elev=30., azim=-45)
-# # plt.title("Phase vs Frequency over k1", fontsize=15)
+# # plt.title("Amplitude vs Frequency over k1", fontsize=15)
 # plt.xticks(fontsize=13)
 # plt.yticks(fontsize=13)
 # ax.tick_params('z', labelsize=13)
-# plt.savefig("freq_phase_over_k1.pdf")
+# plt.savefig("freq_amp_over_k1.pdf")
 # plt.show()
+#
+# # uncomment for phase
+# # ax.set_zlabel("Phase (degrees)", fontsize=15, labelpad=5)
+# # ax.plot_surface(xx, yy, phases)
+# # ax.view_init(elev=30., azim=-45)
+# # # plt.title("Phase vs Frequency over k1", fontsize=15)
+# # plt.xticks(fontsize=13)
+# # plt.yticks(fontsize=13)
+# # ax.tick_params('z', labelsize=13)
+# # plt.savefig("freq_phase_over_k1.pdf")
+# # plt.show()
 #
 # quit()
 
@@ -258,7 +244,7 @@ for i in range(17):
     r.S = r.S + 0.25
 box = ax1.get_position()
 ax1.set_position([box.x0, box.y0, box.width * 0.9, box.height])
-ax1.legend(x, bbox_to_anchor=(1, 1.02), title="Signal\nstrength")
+ax1.legend(x, bbox_to_anchor=(1, 1.02), title="Signal S")
 print(r.S)
 plt.xticks(fontsize=13)
 plt.yticks(fontsize=13)
@@ -270,7 +256,7 @@ ax1.set_xlabel("Freq (log10)", fontsize=15)
 
 ax1.set_ylabel("Phase (degrees)", fontsize=15)
 plt.savefig('bodePhaseSlices.pdf')
-plt.savefig('bodePhaseSlices')
+# plt.savefig('bodePhaseSlices')
 plt.show()
 
 
