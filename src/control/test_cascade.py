@@ -1,11 +1,12 @@
 from control.cascade import Cascade
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import unittest
 
-IGNORE_TEST = False
-IS_PLOT = False
+IGNORE_TEST = True
+IS_PLOT = True
 
 class TestCalculateSteadyState(unittest.TestCase):
 
@@ -86,8 +87,14 @@ class TestCalculateSteadyState(unittest.TestCase):
     def testSimulateLastControlCoefficient(self):
         if IGNORE_TEST:
             return
-        cc_ser = self.cascade.simulateControlCoefficient()
-        self.assertTrue(isinstance(cc_ser, pd.Series))
+        rvec = [1, 1, 1]
+        total = 100
+        cascade = Cascade(rvec, total)
+        cc_df = cascade.simulateControlCoefficient()
+        self.assertTrue(isinstance(cc_df, pd.DataFrame))
+        self.assertTrue(np.isclose(cc_df.loc[ 1, "r1"], -0.25))
+        self.assertTrue(np.isclose(cc_df.loc[ 1, "r2"], -0.5))
+        self.assertTrue(np.isclose(cc_df.loc[ 1, "r3"], -0.75))
 
     def testSet(self):
         if IGNORE_TEST:
@@ -100,16 +107,19 @@ class TestCalculateSteadyState(unittest.TestCase):
         self.cascade.set({1: 100})
         self.assertTrue(self.cascade.roadrunner.k1 == 100)
 
-    def testPlotControlCoefficient(self):
-        if IGNORE_TEST:
-            return
+    def testPlotSimulatedControlCoefficient(self):
+        #if IGNORE_TEST:
+        #    return
         if IGNORE_TEST:
             self.init()
-        rvec = [1, 0.01]
+        size = 4
+        rvec = np.repeat(1, size)
         total = 100
         cascade = Cascade(rvec, total)
-        k2_vals = [0.1, 1, 1.5, 2.0, 10, 20, 50, 100, 1000, 1e5]
-        cascade.plotSimulatedControlCoefficient(k2_vals)
+        r_vals = [0.01, 0.1, 1, 10, 20, 50, 100, 500]
+        ax = cascade.plotSimulatedControlCoefficient(species_idx=2, r_vals=r_vals)
+        ax.set_xscale('log')
+        cascade.writePlot("testPlotControlCoefficient.pdf")
 
     def testPlotConcentrations(self):
         if IGNORE_TEST:
@@ -131,10 +141,17 @@ class TestCalculateSteadyState(unittest.TestCase):
         r1_vals = np.array([10, 100, 1000, 10000, 100000])
         r1_vals = np.array([100000])
         calc_ser = cascade.calculateControlCoefficient(r1_vals=r1_vals)
-        sim_ser = cascade.simulateControlCoefficient(k2_vals=r1_vals)
+        sim_ser = cascade.simulateControlCoefficient(r_vals=r1_vals)["r2"]
         rmse = np.sum((calc_ser - sim_ser).values**2)
         self.assertTrue(np.isclose(rmse, 0))
 
+    def testIterateOnSpeciesNumber(self):
+        if IGNORE_TEST:
+            return
+        if IGNORE_TEST:
+            self.init()
+        nums = list(self.cascade.iterateOnSpeciesNumber())
+        self.assertEqual(set(nums), set(range(1, self.cascade.num_species)))
 
 
 if __name__ == '__main__':
