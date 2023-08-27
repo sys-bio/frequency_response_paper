@@ -9,6 +9,7 @@ import tellurium as te
 import roadrunner
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter, StrMethodFormatter
 from freqResponse import *
 import numpy as np
 
@@ -25,44 +26,49 @@ r = te.loada("""
      
 """)
 
-r.conservedMoietyAnalysis = True
-r.steadyState()
+# fr = FreqencyResponse(r)
+# results = fr.getSpeciesFrequencyResponse(0.01, 3, 100, 'S', 'AP')
+# fr.plot()
+# quit()
 
-x = []
-y = []
-c1 = []
-c2 = []
-z = []
-z2 = []
-
-for i in range(800):
-    r.steadyState()
-    x.append(r.S)
-    y.append(r.AP)
-    c1.append(r.getuCC('AP', 'S'))
-    c2.append(r.getCC('AP', 'S'))
-    z.append(r.getReducedJacobian()[0][0])
-    # print(z[-1])
-    z2.append(r.getNrMatrix())
-    # print(z2)
-    r.S = r.S + 0.01
-
-# print(r.k1)
-plt.plot(x, y, label=r"$AP_{ss}$")
-# plt.plot(x, func_values, label="analytical AP")
-# plt.plot(x, z, label="rJac")
-plt.plot(x, c1, label=r"$\frac{dAP_{ss}}{dS}$")
-plt.plot(x, c2, label=r"$\frac{dAP_{ss}}{dS}\frac{S}{AP_{ss}}$")
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.xlabel("Signal S", fontsize=15)
-plt.legend(fontsize=15)
-plt.tight_layout()
-plt.savefig("single_cycle_plot.pdf")
-plt.savefig("single_cycle_plot")
-plt.show()
-
-quit()
+# r.conservedMoietyAnalysis = True
+# r.steadyState()
+#
+# x = []
+# y = []
+# c1 = []
+# c2 = []
+# z = []
+# z2 = []
+#
+# for i in range(800):
+#     r.steadyState()
+#     x.append(r.S)
+#     y.append(r.AP)
+#     c1.append(r.getuCC('AP', 'S'))
+#     c2.append(r.getCC('AP', 'S'))
+#     z.append(r.getReducedJacobian()[0][0])
+#     # print(z[-1])
+#     z2.append(r.getNrMatrix())
+#     # print(z2)
+#     r.S = r.S + 0.01
+#
+# # print(r.k1)
+# plt.plot(x, y, label=r"$AP_{ss}$")
+# # plt.plot(x, func_values, label="analytical AP")
+# # plt.plot(x, z, label="rJac")
+# plt.plot(x, c1, label=r"$\frac{dAP_{ss}}{dS}$")
+# plt.plot(x, c2, label=r"$\frac{dAP_{ss}}{dS}\frac{S}{AP_{ss}}$")
+# plt.xticks(fontsize=15)
+# plt.yticks(fontsize=15)
+# plt.xlabel("Signal S", fontsize=15)
+# plt.legend(fontsize=15)
+# plt.tight_layout()
+# plt.savefig("single_cycle_plot.pdf")
+# plt.savefig("single_cycle_plot")
+# plt.show()
+#
+# quit()
 
 # =========================================================
 
@@ -227,37 +233,81 @@ r.steadyState()
 
 x = []
 fig, ax1 = plt.subplots()
-for i in range(17):
+for i in range(9):
     freq = []
     amp = []
     phase = []
 
     x.append(r.S)
     fr = FreqencyResponse(r)
-    results = fr.getSpeciesFrequencyResponse(0.001, 3, 100, 'S', 'AP')
+    results = fr.getSpeciesFrequencyResponse(0.001, 4, 100, 'S', 'AP')
     for each in results:
         freq.append(np.log10(each[0]))
         amp.append(each[1])
         phase.append(each[2])
-    # ax1.plot(freq, amp)
-    ax1.plot(freq, phase)
-    r.S = r.S + 0.25
+    ax1.plot(freq, amp)
+    # ax1.plot(freq, phase)
+    r.S = r.S + 0.5
 box = ax1.get_position()
-ax1.set_position([box.x0, box.y0, box.width * 0.9, box.height])
-ax1.legend(x, bbox_to_anchor=(1, 1.02), title="Signal S")
+# ax1.set_position([box.x0, box.y0, box.width * 0.9, box.height])
+# ax1.legend(x, bbox_to_anchor=(1, 1.02), title="Signal S")
+ax1.legend(x, title="Signal S")
 print(r.S)
 plt.xticks(fontsize=13)
 plt.yticks(fontsize=13)
 ax1.set_xlabel("Freq (log10)", fontsize=15)
 
-# ax1.set_ylabel("Amp (log10)", fontsize=15)
-# plt.savefig('bodeAmpSlices.pdf')
-# plt.savefig('bodeAmpSlices')
+ax1.set_ylabel("Amp (log10)", fontsize=15)
+plt.savefig('bodeAmpSlices.pdf')
+plt.savefig('bodeAmpSlices')
 
-ax1.set_ylabel("Phase (degrees)", fontsize=15)
-plt.savefig('bodePhaseSlices.pdf')
+# ax1.set_ylabel("Phase (degrees)", fontsize=15)
+# plt.savefig('bodePhaseSlices.pdf')
 # plt.savefig('bodePhaseSlices')
 plt.show()
 
+quit()
 
+# =========================================================
 
+r.conservedMoietyAnalysis = True
+r.steadyState()
+
+fig, ax = plt.subplots(2)
+
+freq = []
+amp = []
+phase = []
+
+fr = FreqencyResponse(r)
+results = fr.getSpeciesFrequencyResponse(0.01, 4, 10000, 'S', 'AP')
+for each in results:
+    # freq.append(np.log10(each[0]))
+    freq.append(each[0])
+    amp.append(10**(each[1]))
+    # amp.append(each[1])
+    phase.append(each[2])
+
+ax[0].set_yscale('log')
+
+ax[0].set_xscale('log')
+ax[1].set_xscale('log')
+ax[1].yaxis.set_major_formatter(StrMethodFormatter(u"{x:.0f}°"))
+
+ax[0].tick_params(axis='both', which='major', labelsize=13)
+ax[1].tick_params(axis='both', which='major', labelsize=13)
+
+ax[0].set(ylabel="gain G")
+ax[0].yaxis.get_label().set_fontsize(15)
+ax[1].yaxis.get_label().set_fontsize(15)
+ax[1].xaxis.get_label().set_fontsize(15)
+ax[1].set(ylabel="phase difference", xlabel="frequency")
+
+ax[0].plot(freq, amp)
+ax[1].plot(freq, phase)
+plt.tight_layout()
+plt.savefig('BodeSingleCycle2DPlot2.pdf')
+plt.savefig('BodeSingleCycle2DPlot2')
+plt.show()
+
+quit()
