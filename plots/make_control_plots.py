@@ -13,7 +13,9 @@ def plotSingleControlCoefficientComparisons(species_idx, ax=None):
     rvec = np.repeat(1, size)
     total = 100
     cascade = Cascade(rvec, total)
-    r_vals = [0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 50, 100, 200, 300, 400, 500]
+    r_vals = np.array([])
+    for bound in [1e-3, 1e-2, 0.1, 1, 10, 100]:
+        r_vals = np.append(r_vals, np.linspace(bound, bound * 10, 20))
     cascade.plotSimulatedControlCoefficient(species_idx=species_idx, r_vals=r_vals, ax=ax)
     ax.set_xscale('log')
     ax.set_xlabel(r'$log r_{%d}$' % species_idx)
