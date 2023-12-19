@@ -13,6 +13,7 @@ def plotSingleControlCoefficientComparisons(species_idx, ax=None):
     rvec = np.repeat(1, size)
     total = 100
     cascade = Cascade(rvec, total)
+    import pdb; pdb.set_trace()
     r_vals = np.array([])
     for bound in [1e-3, 1e-2, 0.1, 1, 10, 100]:
         r_vals = np.append(r_vals, np.linspace(bound, bound * 10, 20))
